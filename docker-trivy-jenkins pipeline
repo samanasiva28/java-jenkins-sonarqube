@@ -1,0 +1,101 @@
+pipeline {
+    agent any
+
+    
+        environment {
+        GCP_PROJECT = 'sam-452209'
+        GCP_REGION = 'us-central1'
+        GCP_REPO = 'us-central1'
+        IMAGE_NAME = 'myapp'
+        IMAGE_TAG = 'latest'
+        GOOGLE_APPLICATION_CREDENTIALS = credentials('gcp')
+    
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/samanasiva28/java-jenkins-sonarqube.git'
+            }
+        }
+
+         stage('Build & SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') { // Use the name configured in Jenkins settings
+                    sh '''
+                       mvn clean verify sonar:sonar \
+                          -Dsonar.projectKey=java12 \
+                          -Dsonar.host.url=http://34.132.175.167:9000 \
+                          -Dsonar.login=squ_9f2a6c375994b51d513b1375928ff640ba19f6fd
+                        
+                    '''
+                }
+            }
+        }
+
+        
+        stage("Quality Gate") {
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+        stage("build-test") {
+            steps {
+                sh "mvn clean package"
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t myapp:latest .'
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {   
+                    sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                }
+            }
+        }
+         stage("Google Cloud Login") {
+            steps {
+                sh '''
+                gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+                gcloud auth configure-docker us-central1-docker.pkg.dev
+                '''
+            }
+        }
+        stage("gcp") {
+            steps {
+                sh ''' docker tag myapp us-central1-docker.pkg.dev/sam-452209/siva-repo/myapp:latest
+                       docker push us-central1-docker.pkg.dev/sam-452209/siva-repo/myapp:latest'''
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                sh '''
+                docker tag myapp:latest sivasai2003/myapp:latest
+                docker push sivasai2003/myapp:latest'''
+            }
+        }
+        stage("TrivyFilesystem"){
+            steps {
+                sh "trivy fs . > trivyfs.txt"
+            }
+        }
+        stage ("ImageScan"){
+            steps {
+                sh "trivy image"
+            }
+        }
+        stage("build container") {
+            steps {
+                sh "docker run -d --name my-app12 -p 8084:8080 myapp:latest"
+            }
+        }
+    }
+}
