@@ -1,26 +1,16 @@
-provider "google" {
-  project = "sam-452209"
-  region  = "us-central1"  # Add region
-  zone    = "us-central1-a" # Specify the zone
-}
+resource "google_container_cluster" "primary" {
+  name     = var.cluster_name
+  location = var.region  # This is still the region, like 'us-central1'
 
-locals {
-  l1 = ["instance1", "instance2"]
-}
+  deletion_protection = false
 
-resource "google_compute_instance" "inst1" {
-  count        = length(local.l1)
-  name         = local.l1[count.index]
-  machine_type = "e2-medium"
+  initial_node_count = var.node_count
 
-  boot_disk {
-    initialize_params {
-      image = "projects/centos-cloud/global/images/family/centos-stream-9"
-    }
+  node_config {
+    machine_type = var.node_machine_type
+    disk_size_gb = 30
+    # Adding zone here for node pool creation
   }
 
-  network_interface {
-    network = "default"
-    access_config {}  # This enables external IP
-  }
+  remove_default_node_pool = false
 }
