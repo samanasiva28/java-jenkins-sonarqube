@@ -8,7 +8,7 @@ resource "google_container_cluster" "primary" {
 
   node_config {
     machine_type = var.node_machine_type
-    disk_size_gb = 30
+    disk_size_gb = 60
     # Adding zone here for node pool creation
   }
 
