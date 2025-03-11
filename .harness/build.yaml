@@ -1,0 +1,122 @@
+pipeline:
+  name: siva-cluster-deleegate-create
+  identifier: build
+  projectIdentifier: SFTY_Training
+  orgIdentifier: default
+  tags: {}
+  stages:
+    - stage:
+        name: build
+        identifier: build
+        description: ""
+        type: IACM
+        spec:
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          workspace: durgaworkspace
+          execution:
+            steps:
+              - step:
+                  type: IACMTerraformPlugin
+                  name: init
+                  identifier: init
+                  timeout: 10m
+                  spec:
+                    command: init
+              - step:
+                  type: IACMTerraformPlugin
+                  name: plan
+                  identifier: plan
+                  timeout: 10m
+                  spec:
+                    command: plan
+              - step:
+                  type: IACMTerraformPlugin
+                  name: apply
+                  identifier: apply
+                  timeout: 30m
+                  spec:
+                    command: apply
+        tags: {}
+    - parallel:
+        - stage:
+            name: image-build
+            identifier: imagebuild
+            description: ""
+            type: CI
+            spec:
+              cloneCodebase: true
+              platform:
+                os: Linux
+                arch: Amd64
+              runtime:
+                type: Cloud
+                spec: {}
+              execution:
+                steps:
+                  - step:
+                      type: BuildAndPushDockerRegistry
+                      name: BuildAndPushDockerRegistry_1
+                      identifier: BuildAndPushDockerRegistry_1
+                      spec:
+                        connectorRef: yash
+                        repo: sivasai2003/myapp
+                        tags:
+                          - yash1
+                  - step:
+                      type: AquaTrivy
+                      name: AquaTrivy_1
+                      identifier: AquaTrivy_1
+                      spec:
+                        mode: orchestration
+                        config: default
+                        target:
+                          type: container
+                          detection: auto
+                        advanced:
+                          log:
+                            level: info
+                        privileged: true
+                        image:
+                          type: docker_v2
+                          tag: yash
+                          name: sivasai2003/myapp
+                        sbom:
+                          format: spdx-json
+        - stage:
+            name: gcp-build
+            identifier: gcpbuild
+            description: ""
+            type: CI
+            spec:
+              cloneCodebase: true
+              platform:
+                os: Linux
+                arch: Amd64
+              runtime:
+                type: Cloud
+                spec: {}
+              execution:
+                steps:
+                  - step:
+                      type: BuildAndPushGCR
+                      name: BuildAndPushGCR_1
+                      identifier: BuildAndPushGCR_1
+                      spec:
+                        connectorRef: sivanewgcp2
+                        host: us.gcr.io
+                        projectID: shiva-project-453013
+                        imageName: siva
+                        tags:
+                          - yash1
+  properties:
+    ci:
+      codebase:
+        connectorRef: sivaimagebuild
+        repoName: java-jenkins-sonarqube
+        build: <+input>
+        sparseCheckout: []
