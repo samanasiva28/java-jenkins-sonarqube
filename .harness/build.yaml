@@ -47,7 +47,40 @@ pipeline:
                   identifier: Run_1
                   spec:
                     shell: Sh
-                    command: mvn clean package
+                    command: |-
+                      #!/bin/bash
+                      set -e  
+
+                      # Check installed Java versions  
+                      echo "Checking installed Java versions..."  
+                      update-alternatives --list java || echo "No alternatives found for Java"  
+
+                      # Set Java 17 as the default version (Detect dynamically)
+                      if [ -x "/usr/lib/jvm/temurin-17-jdk-amd64/bin/java" ]; then
+                          update-alternatives --install /usr/bin/java java /usr/lib/jvm/temurin-17-jdk-amd64/bin/java 1  
+                          update-alternatives --set java /usr/lib/jvm/temurin-17-jdk-amd64/bin/java  
+                      else
+                          echo "Java 17 not found! Please install Temurin 17 JDK."  
+                          exit 1
+                      fi
+
+                      # Set JAVA_HOME and update PATH dynamically  
+                      export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))  
+                      export PATH=$JAVA_HOME/bin:$PATH  
+
+                      # Verify Java version  
+                      echo "Java version after setting JAVA_HOME:"  
+                      java -version  
+
+                      # Verify Maven version  
+                      echo "Maven version:"  
+                      mvn -version  
+
+                      # Run Maven build  
+                      echo "Starting Maven build..."  
+                      mvn clean package -DskipTests  
+
+                      echo "Maven build completed successfully!"
         tags: {}
     - parallel:
         - stage:
