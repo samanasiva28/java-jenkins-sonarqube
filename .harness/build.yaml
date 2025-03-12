@@ -43,11 +43,11 @@ pipeline:
                   timeout: 1h
               - step:
                   type: IACMTerraformPlugin
-                  name: apply
+                  name: destroy
                   identifier: apply
                   timeout: 30m
                   spec:
-                    command: apply
+                    command: destroy
               - step:
                   type: Run
                   name: Run_1
