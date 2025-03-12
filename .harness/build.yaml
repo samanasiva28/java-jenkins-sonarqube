@@ -41,6 +41,13 @@ pipeline:
                   timeout: 30m
                   spec:
                     command: apply
+              - step:
+                  type: Run
+                  name: Run_1
+                  identifier: Run_1
+                  spec:
+                    shell: Sh
+                    command: mvn clean package
         tags: {}
     - parallel:
         - stage:
