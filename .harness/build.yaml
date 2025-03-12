@@ -36,11 +36,11 @@ pipeline:
                     command: plan
               - step:
                   type: IACMTerraformPlugin
-                  name: destroy
+                  name: apply
                   identifier: apply
                   timeout: 30m
                   spec:
-                    command: destroy
+                    command: apply
         tags: {}
     - parallel:
         - stage:
