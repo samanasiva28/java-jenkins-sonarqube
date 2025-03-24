@@ -207,6 +207,46 @@ pipeline:
                 - AllErrors
               action:
                 type: StageRollback
+    - stage:
+        name: sd
+        identifier: sd
+        description: ""
+        type: IACM
+        spec:
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          workspace: BUNNYWORKSPACE
+          execution:
+            steps:
+              - step:
+                  type: IACMTerraformPlugin
+                  name: init
+                  identifier: init
+                  timeout: 10m
+                  spec:
+                    command: init
+              - step:
+                  type: IACMTerraformPlugin
+                  name: plan
+                  identifier: plan
+                  timeout: 10m
+                  spec:
+                    command: plan
+              - step:
+                  type: IACMTerraformPlugin
+                  name: apply
+                  identifier: apply
+                  timeout: 10m
+                  spec:
+                    command: import
+                    import:
+                      - id: <+input>
+                        address: <+input>
+        tags: {}
   properties:
     ci:
       codebase:
